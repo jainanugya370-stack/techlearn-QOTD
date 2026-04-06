@@ -2,15 +2,15 @@ import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import OutputPanel from "./OutputPanel";
 
-// ✅ SINGLE SOURCE OF TRUTH
-const USER_ID = "69876e1b50a617bdce92d4a3";
+// ✅ LOCAL TEST USER (OK for now)
+const USER_ID = "local-test-user";
 
-// ✅ REDUCED LANGUAGES
+// ✅ SUPPORTED LANGUAGES
 const LANGUAGES = ["Python", "Java"];
 
-// ✅ REDUCED TEMPLATES
+// ✅ CODE TEMPLATES
 const TEMPLATES = {
-  Python: "# Write your solution here\nprint('Hello QOTD')",
+  Python: "# Write your solution here\n",
   Java: "// Write your solution here\nclass Solution {\n\n}"
 };
 
@@ -25,6 +25,15 @@ export default function CodeEditor({ question }) {
   useEffect(() => {
     setCode(TEMPLATES[language]);
   }, [language]);
+
+  // 🛑 Guard: wait for question
+  if (!question || !question._id) {
+    return (
+      <div className="p-4 text-muted">
+        Loading question...
+      </div>
+    );
+  }
 
   // ---------------- RUN ----------------
   const handleRunCode = async () => {
@@ -61,7 +70,7 @@ export default function CodeEditor({ question }) {
         message: "Run successful",
         results: data.results || []
       });
-    } catch {
+    } catch (err) {
       setOutput({
         type: "error",
         message: "Server error during run",
@@ -88,7 +97,8 @@ export default function CodeEditor({ question }) {
         },
         body: JSON.stringify({
           questionId: question._id,
-          userOutput: question.sampleOutput
+          language,
+          code
         })
       });
 
@@ -107,15 +117,9 @@ export default function CodeEditor({ question }) {
       setOutput({
         type: data.success ? "success" : "error",
         message: data.message,
-        results: [
-          {
-            input: question.sampleInput,
-            output: question.sampleOutput,
-            passed: data.success
-          }
-        ]
+        results: data.results || []
       });
-    } catch {
+    } catch (err) {
       setOutput({
         type: "error",
         message: "Server error during submission",
